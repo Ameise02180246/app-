@@ -1,0 +1,57 @@
+from flask import * # 載入 flask 模組
+app=Flask("My Website")# 建立一個網站應用程式物件
+# 建立負責處理 Line 訊息的網址
+# 例如:https://lab-930.herokuapp.com/linebot
+# 找到圖片的網址:
+# https://lab-930.herokuapp.com/static/images/檔案名稱
+import json # 解讀 JSON 格式的套件
+import urllib.request # 發送連線的套件
+@app.route("/linebot", methods=["GET","POST"])
+def linebot():
+    # 取得 Line 傳遞過來的資料
+    content=request.json # 取得整包資訊
+    event=content["events"][0] # 發生的事件(使用者傳遞訊息，使用者加入好友等等)
+    eventType=event["type"] # 事件的型態
+    replyToken=event["replyToken"] # 回應這個訊息，需要的鑰匙 (token)
+    text=event["message"]["text"] # 取得使用者真正傳遞的訊息文字
+    # 準備回應給使用者
+    if "圖片" in text:
+        message={
+            "type":"image",
+            "originalContentUrl":"https://lab-930.herokuapp.com/static/images/pola-island.jpg",
+            "previewImageUrl":"https://lab-930.herokuapp.com/static/images/preview-small.jpg"
+        }
+    else:
+        if text=="建立者是誰":
+            replyText="經管碩一 林庭伃"
+        elif text=="網站壞了" or text=="網頁出現錯誤":
+            replyText="您好：\n目前流量過大，請過3~5分鐘再試看看！\n若試過不行，請留下您的會員電話及目前網頁畫面截圖，我們幫您查詢一下，謝謝！"
+        elif text=="收不到簡訊" or text=="沒收到簡訊":
+            replyText="您好：\n如您按忘記密碼，未收到簡訊認證碼，有可能我們的簡訊系統電話被您封鎖，請留下您的會員電話，我們幫您查詢，謝謝！"
+        elif text=="無法登入":
+            replyText="您好：\n如您在門市註冊過會員，請先至會員專區，按忘記密碼，重新設定密碼並登入後，官網即會有您的會員資料。\n如果還是無法登入，請留下您的會員電話，畫面截圖，我們幫您查詢，謝謝！"
+        elif text=="忘記密碼":
+            replyText="您好：\n請於會員登錄下方選擇「忘記密碼」系統會發送認證碼給您，再進行修改密碼！(如您當初用mail註冊，請用mail進行驗證)\n會員登入→ <a>https://www.mamaway.com.tw/member-myaccount</a>\n如未收到認證碼，請留下您的會員電話，我們幫您查詢，謝謝！"    
+        
+        else:
+            replyText="歡迎光臨 Mamaway"
+        message={"type":"text","text":replyText} # 單一回應訊息 #"text":text // 你打什麼，就回什麼
+    body={ # 整包回應:可以包含很多則訊息
+        "replyToken":replyToken,
+        "messages":[message]
+    }
+    # 處理網路連線，把整個回應傳回給 Line
+    # 準備連線的細節:網址、標頭、資料
+    req=urllib.request.Request("https://api.line.me/v2/bot/message/reply",headers={
+        "Content-Type":"application/json",
+        "Authorization":"Bearer "+"Z47LKAzhy161ZCMHndJfG3XOChFF6r0q5e6w8c/Nk7eGKHX8MrNUOBO+ddw0nJvCSN1PZ1eNLLZB23aCIN10rO6gQf9favJCItQoO3p5NFpbCkrv9pqtFwGxeNcNTnY1GYV+s/9tTpO5QoYXclmJ4AdB04t89/1O/w1cDnyilFU="
+    }, data=json.dumps(body).encode("utf8"))
+    # 發出連線並取得回應
+    response=urllib.request.urlopen(req)
+    response=response.read().decode("utf-8")
+    print(response)
+    return "ok"
+
+
+if __name__=="__main__": # 如果以主程式執行，立刻啟動伺服器
+    app.run() # 啟動伺服器
